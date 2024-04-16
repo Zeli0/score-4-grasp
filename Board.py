@@ -4,6 +4,7 @@ import sys
 import time
 import matplotlib
 import matplotlib.pyplot as plt
+from GameManager import Turn, GameManager
 
 matplotlib.use('QtAgg')
 plt.ion()
@@ -15,14 +16,30 @@ from PySide6.QtCore import (QCoreApplication, QDate, QDateTime, QLocale,
 from PySide6 import QtWidgets
 from PySide6.QtWidgets import (QApplication, QFrame, QGridLayout, QHBoxLayout,
     QMainWindow, QMenuBar, QPushButton, QSizePolicy,
-    QStatusBar, QVBoxLayout, QWidget)
+    QStatusBar, QVBoxLayout, QWidget, QDialog, QDialogButtonBox, QLabel)
 
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 from mpl_toolkits.mplot3d import Axes3D    # @UnusedImport
 from matplotlib.figure import Figure
 import numpy as np
 
+# class CustomDialog(QDialog):
+#     def __init__(self, player):
+#         super().__init__()
 
+#         self.setWindowTitle("Game Over")
+
+#         QBtn = QDialogButtonBox.Ok | QDialogButtonBox.Cancel
+
+#         self.buttonBox = QDialogButtonBox(QBtn)
+#         self.buttonBox.accepted.connect(self.accept)
+#         self.buttonBox.rejected.connect(self.reject)
+
+#         self.layout = QVBoxLayout()
+#         message = QLabel(f"{player.value} wins!")
+#         self.layout.addWidget(message)
+#         self.layout.addWidget(self.buttonBox)
+#         self.setLayout(self.layout)
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -211,9 +228,7 @@ class Ui_MainWindow(object):
         self.selected_y = -1
         self.curr_butt = None
 
-        self.n_voxels = np.zeros((4, 4, 4), dtype=bool)
-        self.m_voxels = np.zeros((4, 4, 4), dtype=bool)
-        self.curr_z = np.zeros((4, 4), dtype=int)
+        self.manager = GameManager()
 
     # setupUi
 
@@ -240,16 +255,16 @@ class Ui_MainWindow(object):
     
     def draw_voxels(self):
         self.ax.clear()
-        ncolors = np.where(self.n_voxels)
-        mcolors = np.where(self.m_voxels)
-        edgecolors = np.where(self.n_voxels | self.m_voxels, '#BFAB6E', '#00000000')
-        facecolors = np.empty(self.n_voxels.shape, dtype=object)
+        ncolors = self.manager.get_player1_moves()
+        mcolors = self.manager.get_player2_moves()
+        edgecolors = np.where(self.manager.get_full_board(), '#BFAB6E', '#00000000')
+        facecolors = np.empty(self.manager.get_board_size(), dtype=object)
         facecolors[ncolors] = '#00D65DC0'
         if self.selected_x != -1:
-            facecolors[self.selected_y, self.selected_x, self.curr_z[self.selected_y, self.selected_x]] = '#0000FFC0'
+            facecolors[self.selected_y, self.selected_x, self.manager.get_top_z(self.selected_y, self.selected_x)] = '#0000FFC0'
         facecolors[mcolors] = '#FF0000C0'
         facecolors[np.where(facecolors == None)] = '#00000000'
-        filled = np.ones(self.n_voxels.shape, dtype=object)
+        filled = np.ones(self.manager.get_board_size(), dtype=object)
 
         # upscale the above voxel image, leaving gaps
         filled_2 = explode(filled)
@@ -269,23 +284,22 @@ class Ui_MainWindow(object):
     def start_button_clicked(self):
         y = self.selected_y
         x = self.selected_x
-        if self.player1_turn:
-            self.n_voxels[y, x, self.curr_z[y, x]] = True
-        else:
-            self.m_voxels[y, x, self.curr_z[y, x]] = True
-        self.curr_z[y,x] += 1
+        self.manager.make_move(y,x)
         self.draw_voxels()
-        self.player1_turn = not self.player1_turn
+        # if self.manager.has_player_won():
+            # dlg = CustomDialog(self.centralwidget, self.manager.player_turn)
+            # dlg.exec()
         self.selected_x = -1
         self.selected_y = -1
         self.reset_all_buttons()
+        self.manager.switch_turns()
 
     def generate_button_funcs(self, y, x):
         def button_clicked():
             self.selected_x = x
             self.selected_y = y
             curr_butt = eval(f"self.pin{y}{x}")
-            if self.curr_z[y,x] == 4:
+            if self.manager.is_top(y, x):
                 return
             curr_butt.setEnabled(False)
             curr_butt.setDown(True)
@@ -319,6 +333,7 @@ class MainWindow(QMainWindow):
         self.ui.plotWidget = Mpwidget(self.ui.figure, parent=self.ui.frame)
 
 
+
 def explode(data):
     size = np.array(data.shape)*2
     data_e = np.zeros(size - 1, dtype=data.dtype)
@@ -326,14 +341,11 @@ def explode(data):
     return data_e
 
 
-
 class Mpwidget(FigureCanvas):
     def __init__(self, figure, parent=None):
         self.figure = figure
         super(Mpwidget, self).__init__(self.figure)
         self.setParent(parent)
-
-
 
 
 if __name__ == "__main__":
