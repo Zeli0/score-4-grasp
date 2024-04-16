@@ -23,23 +23,23 @@ from mpl_toolkits.mplot3d import Axes3D    # @UnusedImport
 from matplotlib.figure import Figure
 import numpy as np
 
-# class CustomDialog(QDialog):
-#     def __init__(self, player):
-#         super().__init__()
+class CustomDialog(QDialog):
+    def __init__(self, player):
+        super().__init__()
 
-#         self.setWindowTitle("Game Over")
+        self.setWindowTitle("Game Over")
 
-#         QBtn = QDialogButtonBox.Ok | QDialogButtonBox.Cancel
+        QBtn = QDialogButtonBox.Ok | QDialogButtonBox.Cancel
 
-#         self.buttonBox = QDialogButtonBox(QBtn)
-#         self.buttonBox.accepted.connect(self.accept)
-#         self.buttonBox.rejected.connect(self.reject)
+        self.buttonBox = QDialogButtonBox(QBtn)
+        self.buttonBox.accepted.connect(self.accept)
+        self.buttonBox.rejected.connect(self.reject)
 
-#         self.layout = QVBoxLayout()
-#         message = QLabel(f"{player.value} wins!")
-#         self.layout.addWidget(message)
-#         self.layout.addWidget(self.buttonBox)
-#         self.setLayout(self.layout)
+        self.layout = QVBoxLayout()
+        message = QLabel(f"{player.value} wins!")
+        self.layout.addWidget(message)
+        self.layout.addWidget(self.buttonBox)
+        self.setLayout(self.layout)
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -285,13 +285,13 @@ class Ui_MainWindow(object):
         y = self.selected_y
         x = self.selected_x
         self.manager.make_move(y,x)
-        self.draw_voxels()
-        # if self.manager.has_player_won():
-            # dlg = CustomDialog(self.centralwidget, self.manager.player_turn)
-            # dlg.exec()
         self.selected_x = -1
         self.selected_y = -1
+        self.draw_voxels()
         self.reset_all_buttons()
+        if self.manager.has_player_won():
+            dlg = CustomDialog(self.manager.player_turn)
+            dlg.exec()
         self.manager.switch_turns()
 
     def generate_button_funcs(self, y, x):

@@ -62,16 +62,16 @@ class GameManager():
 
     has_won_diag = False #np.all(player_moves[diag1] == 1) and np.all(player_moves[diag2] == 1)
 
-    diag1 = np.array([[0,0], [1,1], [2,2], [3,3]])
-    diag2 = np.array([[3,0], [2,1], [1,2], [0,3]])
+    choices = [0,1,2,3]
 
     for i in range(4):
-      for j in range(3):
-        curr_diag1 = np.insert(diag1, j, i, axis=1)
-        curr_diag2 = np.insert(diag2, j, i, axis=1)
-        has_won_diag1 = np.all(player_moves[curr_diag1] == 1)
-        has_won_diag2 = np.all(player_moves[curr_diag2] == 1)
-        has_won_diag = has_won_diag or has_won_diag1 or has_won_diag2
+      curr_x = player_moves[i, :, :]
+      curr_y = player_moves[:, i, :]
+      curr_z = player_moves[:, :, i]
+      has_won_diag_x = (np.choose(choices, curr_x) == 1).all()
+      has_won_diag_y = (np.choose(choices, curr_y) == 1).all()
+      has_won_diag_z = (np.choose(choices, curr_z) == 1).all()
+      has_won_diag = has_won_diag or has_won_diag_x or has_won_diag_y or has_won_diag_z
     
     has_won = has_won or has_won_diag
     return has_won
